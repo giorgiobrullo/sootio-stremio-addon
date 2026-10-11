@@ -1,0 +1,37 @@
+name: Build cursedkarma image
+
+# amd64 only, on every push to the cursedkarma branch; the upstream workflow
+# (docker-build-push.yml) also builds arm64 under QEMU and is dispatch-only.
+on:
+  push:
+    branches: [cursedkarma]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64
+          push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: |
+            ghcr.io/giorgiobrullo/sootio:cursedkarma
+            ghcr.io/giorgiobrullo/sootio:cursedkarma-${{ github.sha }}
